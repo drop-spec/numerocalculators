@@ -1,0 +1,1 @@
+import type { Metadata } from "next"; import LegalPage from "@/components/LegalPage"; export const metadata:Metadata={title:"Contact",description:"Contact Numero Calculators."}; export default function Page(){return <LegalPage title="Contact" intro="Questions or feedback? Please contact the Numero Calculators team before relying on a calculator for a high-stakes decision."/>}

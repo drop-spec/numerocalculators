@@ -1,0 +1,4 @@
+import Link from "next/link";
+const links = [["Calculators","/calculators"],["Money","/money"],["AI Tools","/ai-calculators"],["Conversions","/conversions"],["Time & Date","/time-date"],["Health","/health-fitness"],["Math","/math"]] as const;
+export function Header() { return <header className="site-header"><div className="shell header-inner"><Link className="brand" href="/"><span>∑</span> Numero Calculators</Link><nav aria-label="Main navigation">{links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</nav></div></header>; }
+export function Footer() { return <footer><div className="shell footer"><p><strong>Numero Calculators</strong><br />Free calculators for everyday life.</p><div><Link href="/about">About</Link><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/disclaimer">Disclaimer</Link><Link href="/contact">Contact</Link></div></div></footer>; }

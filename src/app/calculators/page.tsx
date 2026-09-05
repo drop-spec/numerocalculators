@@ -1,0 +1,3 @@
+import type { Metadata } from "next"; import DirectoryClient from "@/components/DirectoryClient"; import { calculators } from "@/lib/calculators";
+export const metadata: Metadata = { title: "All calculators", description: "Browse free everyday calculators for money, percentages, time, conversions, health, math, business, and AI." };
+export default function DirectoryPage(){return <section className="shell page section"><p className="kicker">CALCULATOR DIRECTORY</p><h1>Everyday calculators,<br /><em>without the fuss.</em></h1><p className="lede">Search by topic or name. Every tool is free, fast, and built to make the next decision easier.</p><DirectoryClient calculators={calculators}/></section>}

@@ -1,0 +1,1 @@
+export default function LegalPage({ title, intro }: { title: string; intro: string }) { return <article className="shell page legal"><p className="kicker">NUMERO CALCULATORS</p><h1>{title}</h1><p className="lede">{intro}</p><h2>Our approach</h2><p>We aim to make everyday calculations understandable, transparent, and easy to use on any device.</p></article>; }
