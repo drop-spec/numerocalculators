@@ -2,11 +2,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import posthog from "posthog-js";
 import type { Calculator } from "@/lib/calculators";
+import type { DynamicRow } from "@/lib/calculators";
 import { defaultAIModel } from "@/lib/ai-pricing";
+import DynamicRows from "@/components/DynamicRows";
 const currency = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
 const decimal = (value: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
 type Result = { primary: string; label: string; rows: [string, string][] };
-function calculate(c: Calculator, v: Record<string, number>): Result {
+function calculate(c: Calculator, v: Record<string, number>, dynamicRows: DynamicRow[] = []): Result {
   const f = (x: number) => Number.isFinite(x) ? decimal(x) : "â€”"; const usd = (x: number) => Number.isFinite(x) ? currency(x) : "â€”";
   switch(c.formula) {
     case "salaryHourly": return {primary: usd(v.salary/(v.hours*v.weeks)),label:"Estimated hourly rate",rows:[["Weekly",usd(v.salary/v.weeks)],["Monthly",usd(v.salary/12)],["Annual",usd(v.salary)]]};
@@ -38,6 +40,7 @@ function calculate(c: Calculator, v: Record<string, number>): Result {
     case "percentChange": return {primary:f((v.end-v.start)/v.start*100)+"%",label:"Percentage change",rows:[["Difference",f(v.end-v.start)],["New value",f(v.end)]]};
     case "percentDifference": return {primary:f(Math.abs(v.first-v.second)/((v.first+v.second)/2)*100)+"%",label:"Percentage difference",rows:[["Difference",f(Math.abs(v.first-v.second))],["Average",f((v.first+v.second)/2)]]};
     case "testGrade": {const score=(v.total-v.wrong)/v.total*100;const grade=score>=97?"A+":score>=93?"A":score>=90?"A-":score>=87?"B+":score>=83?"B":score>=80?"B-":score>=77?"C+":score>=73?"C":score>=70?"C-":score>=67?"D+":score>=63?"D":"F";return {primary:f(score)+"%",label:"Test score",rows:[["Letter grade",grade],["Correct answers",f(v.total-v.wrong)],["Incorrect answers",f(v.wrong)]]};}
+    case "grade": {const valid=dynamicRows.filter((row)=>Number(row.possible)>0),weighted=valid.some((row)=>Number(row.weight)>0),numerator=weighted?valid.reduce((sum,row)=>sum+Number(row.earned)/Number(row.possible)*Number(row.weight),0):valid.reduce((sum,row)=>sum+Number(row.earned),0),denominator=weighted?valid.reduce((sum,row)=>sum+Number(row.weight),0):valid.reduce((sum,row)=>sum+Number(row.possible),0),current=denominator?numerator/denominator*100:NaN,finalWeight=weighted?v.finalWeight:0,required=finalWeight>0?(v.target*100-numerator)/finalWeight:NaN;return {primary:f(current)+"%",label:"Current grade",rows:[["Grading method",weighted?"Weighted":"Points-based"],["Assignments",f(valid.length)],["Total points",`${f(valid.reduce((sum,row)=>sum+Number(row.earned),0))} / ${f(valid.reduce((sum,row)=>sum+Number(row.possible),0))}`],["Required final score",Number.isFinite(required)?f(required)+"%":"Add a final weight"]]};}
     case "reversePercent": return {primary:f(v.final/(v.percent/100)),label:"Original value",rows:[["Final value",f(v.final)],["Percentage remaining",f(v.percent)+"%"]]};
     case "birthYear": {const year=v.year-v.age;return {primary:f(year),label:"Estimated birth year",rows:[["Current age",f(v.age)+" years"],["Current year",f(v.year)],["Range",`${f(year-1)}â€“${f(year)}`]]};}
     case "ftCm": return {primary:f(v.value*30.48)+" cm",label:"Centimeters",rows:[["Feet",f(v.value)]]}; case "cmFt": return {primary:f(v.value/30.48)+" ft",label:"Feet",rows:[["Centimeters",f(v.value)]]}; case "inCm": return {primary:f(v.value*2.54)+" cm",label:"Centimeters",rows:[["Inches",f(v.value)]]}; case "lbKg": return {primary:f(v.value*0.453592)+" kg",label:"Kilograms",rows:[["Pounds",f(v.value)]]}; case "kgLb": return {primary:f(v.value*2.20462)+" lb",label:"Pounds",rows:[["Kilograms",f(v.value)]]}; case "miKm": return {primary:f(v.value*1.60934)+" km",label:"Kilometers",rows:[["Miles",f(v.value)]]}; case "fC": return {primary:f((v.value-32)*5/9)+" Â°C",label:"Celsius",rows:[["Fahrenheit",f(v.value)]]}; case "cF": return {primary:f(v.value*9/5+32)+" Â°F",label:"Fahrenheit",rows:[["Celsius",f(v.value)]]};
@@ -80,7 +83,9 @@ function calculate(c: Calculator, v: Record<string, number>): Result {
 export default function CalculatorClient({ calculator }: { calculator: Calculator }) {
   const initial = Object.fromEntries(calculator.fields.map((field) => [field.id, field.defaultValue]));
   const [values, setValues] = useState<Record<string, number>>(initial);
-  const result = useMemo(() => calculate(calculator, values), [calculator, values]);
+  const initialRows = calculator.dynamicRows?.initialRows ?? [];
+  const [rows, setRows] = useState<DynamicRow[]>(initialRows);
+  const result = useMemo(() => calculate(calculator, values, rows), [calculator, values, rows]);
   const changedField = useRef<string | null>(null);
   const previousResult = useRef(result.primary);
 
@@ -92,7 +97,9 @@ export default function CalculatorClient({ calculator }: { calculator: Calculato
   }, [calculator, result]);
 
   const handleChange = (fieldId: string, value: number) => { changedField.current = fieldId; setValues((current) => ({ ...current, [fieldId]: value })); };
-  const handleReset = () => { setValues(initial); posthog.capture("calculator_reset", { calculator_slug: calculator.slug, calculator_title: calculator.title, calculator_category: calculator.category }); };
+  const handleReset = () => { setValues(initial); setRows(initialRows); posthog.capture("calculator_reset", { calculator_slug: calculator.slug, calculator_title: calculator.title, calculator_category: calculator.category }); };
+
+  if (calculator.dynamicRows) return <section className="calculator" aria-label={`${calculator.title} form`}><div className="fields"><DynamicRows definition={calculator.dynamicRows} rows={rows} onChange={setRows} />{calculator.fields.map((field) => <label key={field.id}>{field.label}<div className="input-wrap">{field.suffix === "$" && <span>$</span>}<input type="number" min={field.min} value={Number.isFinite(values[field.id]) ? values[field.id] : ""} onChange={(event) => handleChange(field.id, Number(event.target.value))} />{field.suffix && field.suffix !== "$" && <span>{field.suffix}</span>}</div></label>)}</div><div className="result" aria-live="polite"><p>{result.label}</p><strong>{result.primary}</strong><dl>{result.rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><button type="button" onClick={handleReset}>Reset calculator</button></div></section>;
 
   return <section className="calculator" aria-label={`${calculator.title} form`}><div className="fields">{calculator.fields.map((field) => <label key={field.id}>{field.label}<div className="input-wrap">{field.suffix === "$" && <span>$</span>}<input type="number" min={field.min} value={Number.isFinite(values[field.id]) ? values[field.id] : ""} onChange={(event) => handleChange(field.id, Number(event.target.value))} />{field.suffix && field.suffix !== "$" && <span>{field.suffix}</span>}</div></label>)}</div><div className="result" aria-live="polite"><p>{result.label}</p><strong>{result.primary}</strong><dl>{result.rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl><button type="button" onClick={handleReset}>Reset values</button></div>{calculator.ai && <p className="pricing-note">Example pricing data last updated {defaultAIModel.lastUpdated}. AI model pricing changes over time—check the provider&apos;s official pricing before making purchasing decisions.</p>}</section>;
 }

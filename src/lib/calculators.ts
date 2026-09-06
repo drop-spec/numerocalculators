@@ -1,8 +1,11 @@
 export type Category = "money" | "percentage" | "time-date" | "conversions" | "health-fitness" | "math" | "business" | "ai-calculators";
 export type Field = { id: string; label: string; defaultValue: number; suffix?: string; min?: number };
+export type DynamicRowField = { id: string; label: string; type: "text" | "number"; defaultValue: string | number; suffix?: string; min?: number };
+export type DynamicRow = Record<string, string | number> & { id: string };
+export type DynamicRowsDefinition = { id: string; label: string; addLabel: string; minRows?: number; fields: DynamicRowField[]; initialRows: DynamicRow[] };
 export type Calculator = {
   slug: string; title: string; description: string; category: Category; fields: Field[]; formula: string;
-  keywords: string[]; explanation: string; example: string; related: string[]; ai?: boolean;
+  keywords: string[]; explanation: string; example: string; related: string[]; dynamicRows?: DynamicRowsDefinition; ai?: boolean;
 };
 
 export const categories: Record<Category, { title: string; description: string; accent: string }> = {
@@ -52,6 +55,7 @@ export const calculators: Calculator[] = [
   c("percentage-difference-calculator", "Percentage Difference Calculator", "percentage", [n("first","First value",80),n("second","Second value",100)], "percentDifference", "Compare two values using their average as the reference."),
   c("reverse-percentage-calculator", "Reverse Percentage Calculator", "percentage", [n("final","Final value",80),n("percent","Percentage remaining",80,"%")], "reversePercent", "Find the original value before a percentage reduction or increase."),
   c("test-grade-calculator", "Test Grade Calculator", "math", [n("total","Total questions or points",40),n("wrong","Incorrect answers",7)], "testGrade", "Calculate a percentage score and an estimated letter grade from total and incorrect answers.", ["test score", "teacher grader", "grade percentage"]),
+  { ...c("grade-calculator", "Grade Calculator", "math", [n("target", "Desired final grade", 90, "%"), n("finalWeight", "Final exam weight", 35, "%")], "grade", "Calculate a current grade from any number of assignments, then estimate the final-exam score needed to reach your target.", ["weighted grade", "final grade", "assignment grade"]), explanation: "Add each completed assignment. Use points earned and possible for points-based courses; add a weight to use weighted grading.", example: "Add your homework, midterm, and project to see your current standing and the score needed on a final exam.", dynamicRows: { id: "assignments", label: "Assignments", addLabel: "Add assignment", minRows: 1, fields: [{ id: "name", label: "Assignment", type: "text", defaultValue: "Assignment" }, { id: "earned", label: "Score earned", type: "number", defaultValue: 90, min: 0 }, { id: "possible", label: "Score possible", type: "number", defaultValue: 100, min: 0 }, { id: "weight", label: "Weight", type: "number", defaultValue: 0, suffix: "%", min: 0 }], initialRows: [{ id: "homework-1", name: "Homework 1", earned: 92, possible: 100, weight: 10 }, { id: "homework-2", name: "Homework 2", earned: 87, possible: 100, weight: 10 }, { id: "midterm", name: "Midterm", earned: 84, possible: 100, weight: 25 }, { id: "project", name: "Project", earned: 95, possible: 100, weight: 20 }] } },
   c("birth-year-calculator", "Birth Year Calculator", "time-date", [n("age","Current age",30,"years"),n("year","Current year",2026)], "birthYear", "Estimate a birth year from a person’s current age and the current year.", ["year born", "what year was I born"]),
   c("feet-to-centimeters", "Feet to Centimeters", "conversions", [n("value","Feet",6,"ft")], "ftCm", "Convert feet to centimeters."),
   c("centimeters-to-feet", "Centimeters to Feet", "conversions", [n("value","Centimeters",180,"cm")], "cmFt", "Convert centimeters to feet."),
