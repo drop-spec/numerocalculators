@@ -19,8 +19,31 @@ export const categories: Record<Category, { title: string; description: string; 
   "ai-calculators": { title: "AI cost calculators", description: "Estimate AI API, token, product, image, and video costs before you commit budget.", accent: "AI tools" },
 };
 
+// Edit the explanatory copy for any calculator here. Add an entry using its slug
+// from the `calculators` list below; formulas, inputs, and directory details stay separate.
+export type CalculatorCopy = Pick<Calculator, "explanation" | "example"> & { planningTip?: string };
+export const calculatorCopy: Partial<Record<string, CalculatorCopy>> = {
+  "mulch-calculator": {
+    explanation: "Mulch is a protective layer placed over soil in garden beds and landscaped areas. It can improve the appearance of a space while helping soil hold moisture, moderate temperature swings, reduce erosion, and limit weed growth. The right amount depends on the material, the plants, and whether the area is primarily decorative or growing space.",
+    example: "For a 20 ft by 12 ft bed, a 3 in layer requires 60 cubic feet of mulch, or about 2.22 cubic yards. Enter the bag coverage shown on your chosen product to see how many bags to buy.",
+    planningTip: "A layer about 2 to 4 inches deep works well for many beds. Too little may not suppress weeds effectively; too much can slow water and air movement into the soil. Choose a mulch suited to your garden, and order a little extra for settling, curves, and uneven areas.",
+  },
+  "concrete-calculator": {
+    explanation: "Multiply the slab length and width by its depth. The calculator converts depth from inches, applies your extra-material allowance, and estimates both cubic yards and 60 lb bags.",
+    example: "A 20 ft by 10 ft slab at 4 in deep needs about 2.72 cubic yards after a 10% allowance.",
+  },
+  // "your-calculator-slug": {
+  //   explanation: "Explain the calculation in your own words.",
+  //   example: "Show a short, realistic worked example.",
+  //   planningTip: "Add an optional practical tip for material calculators.",
+  // },
+};
+
 const c = (slug: string, title: string, category: Category, fields: Field[], formula: string, description: string, keywords: string[] = []): Calculator => ({
-  slug, title, category, fields, formula, description, keywords, explanation: "Enter the values you know to get an instant estimate. Results are rounded for readability; use them as a practical planning guide.", example: "Try the pre-filled values, then adjust them to match your situation.", related: [], ai: category === "ai-calculators",
+  slug, title, category, fields, formula, description, keywords,
+  explanation: calculatorCopy[slug]?.explanation ?? "Enter the values you know to get an instant estimate. Results are rounded for readability; use them as a practical planning guide.",
+  example: calculatorCopy[slug]?.example ?? "Try the pre-filled values, then adjust them to match your situation.",
+  related: [], ai: category === "ai-calculators",
 });
 const n = (id: string, label: string, defaultValue: number, suffix?: string): Field => ({ id, label, defaultValue, suffix, min: 0 });
 
@@ -80,6 +103,8 @@ export const calculators: Calculator[] = [
   c("square-root-calculator", "Square Root Calculator", "math", [n("value","Number",144)], "sqrt", "Find the principal square root of a non-negative number."),
   c("volume-calculator", "Volume Calculator", "math", [n("length","Length",10,"units"),n("width","Width",5,"units"),n("height","Height",3,"units")], "volume", "Calculate the volume of a rectangular prism from its length, width, and height.", ["volume calculator", "rectangular prism volume", "cubic volume"]),
   c("area-calculator", "Area Calculator", "math", [n("length","Length",10,"units"),n("width","Width",5,"units")], "area", "Calculate the area of a rectangle from length and width."),
+  c("mulch-calculator", "Mulch Calculator", "math", [n("length","Length",20,"ft"),n("width","Width",12,"ft"),n("depth","Mulch depth",3,"in")], "mulch", "Estimate mulch volume, bags, and material cost for a rectangular garden bed.", ["garden mulch", "landscaping", "cubic yards", "mulch bags"]),
+  c("concrete-calculator", "Concrete Calculator", "math", [n("length","Length",20,"ft"),n("width","Width",10,"ft"),n("depth","Slab depth",4,"in")], "concrete", "Estimate ready-mix volume or 60 lb concrete bags for a rectangular slab.", ["concrete slab", "cement", "concrete bags", "cubic yards"]),
   c("pythagorean-theorem-calculator", "Pythagorean Theorem Calculator", "math", [n("first","First leg",3),n("second","Second leg",4)], "pythagorean", "Find the hypotenuse of a right triangle."),
   c("distance-calculator", "Distance Calculator", "math", [n("x1","First x-coordinate",0),n("y1","First y-coordinate",0),n("x2","Second x-coordinate",3),n("y2","Second y-coordinate",4)], "distance", "Calculate the straight-line distance between two coordinate points."),
   c("slope-calculator", "Slope Calculator", "math", [n("x1","First x-coordinate",0),n("y1","First y-coordinate",0),n("x2","Second x-coordinate",4),n("y2","Second y-coordinate",8)], "slope", "Find the slope between two coordinate points."),

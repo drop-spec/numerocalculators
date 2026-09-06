@@ -1,0 +1,9 @@
+.help {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+.calculator :global(.pricing-note) {
+  margin-top: -8px;
+}
